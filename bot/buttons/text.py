@@ -1,0 +1,7 @@
+plus_1 = "+ 1"
+plus_5 = "+ 5"
+plus_10 = "+ 10"
+close_order = "🧺 Оформление заказа"
+forward_to_bot = "🤖 Перейти к боту"
+clear_basket = "🔁 Очистить корзину"
+my_orders = "🛍 Мои заказы"

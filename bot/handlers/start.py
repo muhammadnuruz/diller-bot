@@ -1,0 +1,103 @@
+from aiogram import Router
+from aiogram.filters import CommandStart
+from aiogram.types import Message, InlineQueryResultPhoto, InlineQuery, FSInputFile, ChosenInlineResult
+from aiogram.fsm.context import FSMContext
+
+from bot.buttons.inline_buttons import main_menu_button, buy_cards_button
+from bot.states import StartState
+from db.model import TelegramUser, Card
+
+router = Router()
+
+none_img_url = "AgACAgIAAxkDAAMhaJ2qou1aP_cVtpTS1J-7KVmRsDsAAj7zMRsaoOlIfuDFXr9eZBoBAAMCAANtAAM2BA"
+
+
+@router.inline_query()
+async def inline_search(query: InlineQuery):
+    text = query.query.strip()
+
+    if not text:
+        await query.answer([], cache_time=1, is_personal=True)
+        return
+
+    items = await Card.get_by(unique_link=text)
+    if not items:
+        await query.answer([], cache_time=1, is_personal=True)
+        return
+
+    item = items[0]
+    if item.image:
+        photo_url = item.image
+    else:
+        photo_url = none_img_url
+    results = [
+        InlineQueryResultPhoto(
+            id=str(item.id),
+            photo_url=photo_url,
+            thumbnail_url=photo_url,
+            title=item.name,
+            description=f"💰 {item.price} сум",
+            caption=(
+                f"<b>{item.name}</b>\n"
+                f"💰 Цена: <b>{item.price}</b> сум\n"
+                f"🆔 Код товара: <code>{item.unique_link}</code>"
+            ),
+            parse_mode="HTML",
+            reply_markup=await buy_cards_button(item.id)
+        )
+    ]
+    await query.answer(results, cache_time=1, is_personal=True)
+
+
+@router.message(CommandStart())
+async def start_handler(msg: Message, state: FSMContext):
+    await state.set_state(StartState.url)
+    await msg.answer("Введите URL-адрес")
+
+
+@router.message(StartState.url)
+async def start_handler_2(msg: Message, state: FSMContext):
+    await state.update_data(url=msg.text)
+    await state.set_state(StartState.login)
+    await msg.answer("Введите ваш логин")
+
+
+@router.message(StartState.login)
+async def start_handler_3(msg: Message, state: FSMContext):
+    await state.update_data(login=msg.text)
+    await state.set_state(StartState.password)
+    await msg.answer("Введите пароль")
+
+
+@router.message(StartState.password)
+async def start_handler_4(msg: Message, state: FSMContext):
+    await state.update_data(password=msg.text)
+    await state.set_state(StartState.type_price)
+    await msg.answer("Отправить цену CS_id")
+
+
+@router.message(StartState.type_price)
+async def start_handler_5(msg: Message, state: FSMContext):
+    await msg.answer("Добро пожаловать в наш бот")
+    data = await state.get_data()
+    base_url = data['url'].rstrip("/")
+    final_url = f"{base_url}/api/v2/"
+
+    await TelegramUser.create_or_update(
+        chat_id=str(msg.from_user.id),
+        full_name=msg.from_user.full_name,
+        username=msg.from_user.username,
+        url=final_url,
+        login=data['login'],
+        password=data['password'],
+        price_type=msg.text
+    )
+    buttons = await main_menu_button(url=final_url, login=data['login'], password=data['password'])
+    if buttons:
+        await msg.answer("Выберите нужную категорию", reply_markup=buttons)
+    else:
+        await msg.answer("""
+У вас нет категорий или информация неверна.
+
+Чтобы начать заново: /start""")
+    await state.clear()
