@@ -1,6 +1,7 @@
 import requests
 
 from bot.buttons.inline_buttons import main_menu_button
+from bot.handlers.start import none_img_url
 from db.model import TelegramUser, Card
 import os
 import uuid
@@ -56,8 +57,11 @@ async def create_cards_function(call: CallbackQuery):
             f"💰 Цена: <b>{price}</b> сум\n"
             f"🆔 Код товара: <code>{u_id}</code>"
         )
-
-        await Card.create(name=name, image=tg_user[0].url[:-7] + imageUrl, price=price, unique_link=u_id,
+        if imageUrl:
+            img = tg_user[0].url[:-7] + imageUrl
+        else:
+            img = None
+        await Card.create(name=name, image=img, price=price, unique_link=u_id,
                           user=tg_user[0].id)
 
         if imageUrl:
