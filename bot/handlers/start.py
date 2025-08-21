@@ -53,13 +53,14 @@ async def inline_search(query: InlineQuery):
 
 
 @router.message(F.text.in_(['/start', back_user_menu]), StateFilter(any_state))
-async def start_handler(msg: Message):
+async def start_handler(msg: Message, state: FSMContext):
     await TelegramUser.create_or_update(
         chat_id=str(msg.from_user.id),
         full_name=msg.from_user.full_name,
         username=msg.from_user.username,
     )
     await msg.answer("Добро пожаловать в наш бот", reply_markup=await main_menu_reply_buttons())
+    await state.clear()
 
 
 @router.message(F.text == be_seller)
