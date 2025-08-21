@@ -1,7 +1,6 @@
 import requests
 
 from bot.buttons.inline_buttons import main_menu_button
-from bot.handlers.start import none_img_url
 from db.model import TelegramUser, Card
 import os
 import uuid
@@ -12,6 +11,9 @@ from aiogram.types import FSInputFile, CallbackQuery
 async def create_cards_function(call: CallbackQuery):
     category_id = call.data[9:]
     tg_user = await TelegramUser.get_by(chat_id=str(call.from_user.id))
+    if not tg_user[0].is_purchase:
+        await call.message.answer(text="Вы не приобрели ежемесячную подписку ✖")
+        return
 
     login_data = {
         "method": "login",

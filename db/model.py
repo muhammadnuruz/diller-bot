@@ -1,7 +1,7 @@
 import uuid
 
 from db.utils import CreateModel
-from sqlalchemy import Integer, String, ForeignKey, Column, Numeric, JSON
+from sqlalchemy import Integer, String, ForeignKey, Column, Numeric, JSON, Boolean, DateTime
 
 
 class TelegramUser(CreateModel):
@@ -13,6 +13,12 @@ class TelegramUser(CreateModel):
     login = Column(String(255), nullable=True)
     password = Column(String(255), nullable=True)
     price_type = Column(String(50), nullable=True)
+    status_adverb = Column(Boolean(), default=True)
+    is_diller = Column(Boolean(), default=False)
+    is_purchase = Column(Boolean(), default=False)
+    purchase_data = Column(DateTime(timezone=True), nullable=True)
+    day = Column(Integer, nullable=True)
+    card_ids = Column(JSON, nullable=True)
 
 
 class Card(CreateModel):

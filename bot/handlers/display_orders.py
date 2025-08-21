@@ -12,6 +12,9 @@ router = Router()
 @router.callback_query(F.data == my_orders)
 async def my_orders_handler(call: CallbackQuery):
     tg_user = await TelegramUser.get_by(chat_id=str(call.from_user.id))
+    if not tg_user[0].is_purchase:
+        await call.message.answer(text="Вы не приобрели ежемесячную подписку ✖")
+        return
     orders = await Order.get_by(shop=tg_user[0].id)
 
     if not orders:

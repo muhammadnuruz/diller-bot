@@ -1,7 +1,12 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import requests
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.buttons.text import plus_1, plus_5, plus_10, clear_basket, close_order, forward_to_bot, my_orders
+from bot.buttons.text import plus_1, plus_5, plus_10, clear_basket, close_order, forward_to_bot, my_orders, \
+    send_new_order
+from db.model import TelegramUser
+
+USERS_PER_PAGE = 10
 
 
 async def main_menu_button(url, login, password):
@@ -58,3 +63,80 @@ async def buy_cards_button(id_: int):
         ]
     ])
     return markup
+
+
+async def new_order_button(id_):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=send_new_order, callback_data="send:new:order:{}".format(id_))]
+    ])
+
+
+async def give_permission_button(page: int = 1):
+    telegram_users = await TelegramUser.get_by(is_purchase=False, is_diller=True)
+
+    start = (page - 1) * USERS_PER_PAGE
+    end = start + USERS_PER_PAGE
+    users_page = telegram_users[start:end]
+
+    kb = InlineKeyboardBuilder()
+
+    for user in users_page:
+        full_name = user.full_name or "—"
+        username = f"@{user.username}" if user.username else ""
+        text = f"{full_name} {username}"
+        kb.row(
+            InlineKeyboardButton(
+                text=text.strip(),
+                callback_data=f"give_perm_{user.chat_id}"
+            )
+        )
+
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(
+            InlineKeyboardButton(text="⬅️ Назад", callback_data=f"users_page:{page - 1}")
+        )
+    if end < len(telegram_users):
+        nav_buttons.append(
+            InlineKeyboardButton(text="Вперёд ➡️", callback_data=f"users_page:{page + 1}")
+        )
+
+    if nav_buttons:
+        kb.row(*nav_buttons)
+
+    return kb.as_markup()
+
+
+async def take_permission_button(page: int = 1):
+    telegram_users = await TelegramUser.get_by(is_purchase=True)
+    start = (page - 1) * USERS_PER_PAGE
+    end = start + USERS_PER_PAGE
+    users_page = telegram_users[start:end]
+
+    kb = InlineKeyboardBuilder()
+
+    for user in users_page:
+        full_name = user.full_name or "—"
+        username = f"@{user.username}" if user.username else ""
+        text = f"{full_name} {username}"
+        kb.row(
+            InlineKeyboardButton(
+                text=text.strip(),
+                callback_data=f"take_perm_{user.chat_id}"
+            )
+        )
+
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(
+            InlineKeyboardButton(text="⬅️ Назад", callback_data=f"users_page:{page - 1}")
+        )
+    if end < len(telegram_users):
+        nav_buttons.append(
+            InlineKeyboardButton(text="Вперёд ➡️", callback_data=f"users_page:{page + 1}")
+        )
+
+    if nav_buttons:
+        kb.row(*nav_buttons)
+
+    return kb.as_markup()
