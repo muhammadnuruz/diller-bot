@@ -70,7 +70,9 @@ async def run_main_function():
             try:
                 user = data["user"]
                 orders = data.get("orders", {})
-                agents = data.get("agents", {}).get("result", {}).get("agent", [])
+                agents = data.get("agents", {}).get("result", {})
+                if type(agents) is not list:
+                    agents = agents.get("agent", [])
                 clients = data.get("clients", [])
 
                 for order, client in zip(orders.get("result", {}).get("order", []), clients):
