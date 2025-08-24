@@ -44,7 +44,7 @@ async def main():
     asyncio.create_task(background_task())
     logger.warning("🤖 Telegram bot launched")
     scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
-    scheduler.add_job(send_daily_advert_function, "cron", hour=13, minute=20)
+    scheduler.add_job(send_daily_advert_function, "cron", hour=8, minute=0)
     scheduler.start()
 
     try:
