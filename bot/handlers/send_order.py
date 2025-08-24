@@ -182,7 +182,7 @@ async def handle_user_shared(msg: Message):
             u_id = str(uuid.uuid4())[:15]
             product = products.get(item['product']['CS_id'])
 
-            if product and product.get("imageUrl"):
+            if product['imageUrl']:
                 product_image = tg_user[0].url[:-7] + product["imageUrl"]
             else:
                 product_image = none_img_url
@@ -201,14 +201,16 @@ async def handle_user_shared(msg: Message):
                 f"💰 Цена: <b>{item['price']}</b> сум\n"
                 f"🆔 Код товара: <code>{u_id}</code>"
             )
-
-            await msg.bot.send_photo(
-                chat_id=user_id_,
-                photo=product_image,
-                caption=caption,
-                parse_mode="HTML",
-                reply_markup=await buy_cards_button(card.id)
-            )
-            await asyncio.sleep(0.5)
+            try:
+                await msg.bot.send_photo(
+                    chat_id=user_id_,
+                    photo=product_image,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=await buy_cards_button(card.id)
+                )
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
         await msg.answer("✔ Все сообщения, отправленные клиенту", reply_markup=await main_menu_reply_buttons())
         return await TelegramUser.create_or_update(chat_id=str(user_id_), day=client_day, card_ids=item_data)
