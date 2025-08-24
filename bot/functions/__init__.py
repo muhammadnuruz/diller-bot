@@ -74,8 +74,11 @@ async def run_main_function():
                 if type(agents) is not list:
                     agents = agents.get("agent", [])
                 clients = data.get("clients", [])
+                orders = orders.get("result", {})
+                if type(orders) is not list:
+                    orders = orders.get("order", [])
 
-                for order, client in zip(orders.get("result", {}).get("order", []), clients):
+                for order, client in zip(orders, clients):
                     try:
                         related_agent = {
                             "CS_id": order.get("agent", {}).get("CS_id", "—"),
