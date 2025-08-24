@@ -27,7 +27,7 @@ def get_login_task(session, telegram_users):
 def get_orders_task(session, telegram_users, login_datas):
     tasks = []
     now = datetime.now()
-    five_min_ago = now - timedelta(minutes=6)
+    five_min_ago = now - timedelta(minutes=10)
     date_format = "%Y-%m-%d %H:%M:%S"
 
     for user, login_data in zip(telegram_users, login_datas):
@@ -182,6 +182,7 @@ async def main_function():
         clients = await nested_validate_data(
             get_client_tasks(session, telegram_users, login_datas, get_clients_id_function(new_orders)))
         data = []
+        print(new_orders)
         for user, orders, agent, client in zip(telegram_users, new_orders, agents, clients):
             data.append({
                 "user": user,
