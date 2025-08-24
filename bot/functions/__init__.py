@@ -73,6 +73,7 @@ async def run_main_function():
                 agents_raw = data.get("agents", [])
                 if isinstance(agents_raw, dict):
                     agents = agents_raw.get("result", {})
+                    print(agents)
                     agents = agents.get("agent", [])
                 elif isinstance(agents_raw, list):
                     agents = agents_raw
