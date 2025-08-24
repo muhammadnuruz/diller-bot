@@ -70,7 +70,13 @@ async def run_main_function():
             try:
                 user = data["user"]
                 orders = data.get("orders", {})
-                agents = data.get("agents", {}).get("result", {}).get("agent", [])
+                agents_raw = data.get("agents", [])
+                if isinstance(agents_raw, dict):
+                    agents = agents_raw.get("result", {}).get("agent", [])
+                elif isinstance(agents_raw, list):
+                    agents = agents_raw
+                else:
+                    agents = []
                 clients = data.get("clients", [])
 
                 for order, client in zip(orders.get("result", {}).get("order", []), clients):
