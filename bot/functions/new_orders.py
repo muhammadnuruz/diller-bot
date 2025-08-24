@@ -27,7 +27,7 @@ def get_login_task(session, telegram_users):
 def get_orders_task(session, telegram_users, login_datas):
     tasks = []
     now = datetime.now()
-    five_min_ago = now - timedelta(minutes=10)
+    five_min_ago = now - timedelta(minutes=30)
     date_format = "%Y-%m-%d %H:%M:%S"
 
     for user, login_data in zip(telegram_users, login_datas):
