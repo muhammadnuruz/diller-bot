@@ -35,14 +35,14 @@ def build_order_text(order, related_user, related_agent):
     lines = [
         f"📦 <b>Заказ ID:</b> <code>{order.get('CS_id', '—')}</code>",
         f"📅 <b>Дата:</b> {order.get('dateCreate', '—')}",
-        "━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         f"👤 <b>Клиент:</b> {related_user.get('name', '—')}",
         f"🆔 <b>CS_id:</b> <code>{related_user.get('CS_id', '—')}</code>",
         f"📱 <b>Телефон:</b> {phone}",
-        "━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         f"🆔 <b>CS_id:</b> <code>{related_agent.get('CS_id', '—')}</code>",
         f"🧑‍💼 <b>Агент:</b> {related_agent.get('name', '—')}",
-        "━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         "🛒 <b>Товары:</b>"
     ]
 
@@ -51,14 +51,14 @@ def build_order_text(order, related_user, related_agent):
             product_name = p["product"].get("name", "—")
             quantity = p.get("quantity", 0)
             summa = f"{p.get('summa', 0):,}".replace(",", " ")
-            lines.append(f"{idx}. {product_name} × {quantity} = <b>{summa}</b>")
+            lines.append(f"{idx}. {product_name} × {quantity} × {p.get('price', 0)} = <b>{summa}</b>")
     else:
         lines.append("— Нет товаров —")
 
     lines.extend([
-        "━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         f"💰 <b>Итого:</b> <b>{order.get('totalSummaAfterDiscount', 0)}</b>",
-        "━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
     ])
     return "\n".join(lines)
 

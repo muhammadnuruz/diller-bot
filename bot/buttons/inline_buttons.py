@@ -59,7 +59,7 @@ async def buy_cards_button(id_: int):
             InlineKeyboardButton(text=close_order, callback_data=f"close_order_{id_}")
         ],
         [
-            InlineKeyboardButton(text=forward_to_bot, url="https://t.me/TujjorsBot")
+            InlineKeyboardButton(text=forward_to_bot, url="https://t.me/ClickCardBot")
         ]
     ])
     return markup

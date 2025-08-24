@@ -8,9 +8,74 @@ from bot.buttons.inline_buttons import buy_cards_button
 from bot.buttons.reply_buttons import request_user_reply_keyboard, main_menu_reply_buttons
 from bot.functions import build_order_text
 from bot.functions.new_orders import get_login_task, validate_data, get_agent_tasks
+from bot.handlers.start import none_img_url
 from db.model import TelegramUser, Card
 
 router = Router()
+
+
+async def fetch_orders(session, url, user_id, token, page, limit):
+    resp = await session.post(
+        url=url,
+        json={
+            "auth": {
+                "userId": user_id,
+                "token": token
+            },
+            "method": "getOrder",
+            "params": {
+                "page": page,
+                "limit": limit,
+                "filter": {
+                    "include": "all",
+                    "status": [1, 2, 3],
+                }
+            }
+        }
+    )
+    return await resp.json()
+
+
+import asyncio
+
+
+async def find_order(session, url, user_id, token, cs_id, limit=1000, batch_size=50):
+    page = 1
+    order = None
+
+    while True:
+        tasks = [
+            fetch_orders(session, url, user_id, token, p, limit)
+            for p in range(page, page + batch_size)
+        ]
+        results = await asyncio.gather(*tasks)
+
+        found = False
+        for resp in results:
+            if isinstance(resp, Exception):
+                continue
+
+            orders_list = resp.get("result", {}).get("order", [])
+            if not orders_list:
+                found = None
+                break
+
+            for orders in orders_list:
+                if orders.get("CS_id") == cs_id:
+                    order = orders
+                    found = True
+                    break
+            if found:
+                break
+
+        if found is True:
+            break
+        elif found is None:
+            break
+        else:
+            page += batch_size
+
+    return order
 
 
 @router.callback_query(F.data.startswith("send:new:order:"))
@@ -50,26 +115,7 @@ async def handle_user_shared(msg: Message):
                 "Пожалуйста, отправьте администратору сообщение об ошибке при входе в систему: {}".format(e))
             return
         try:
-            order_resp = await session.post(
-                url=tg_user[0].url,
-                json={
-                    "auth": {
-                        "userId": user_id,
-                        "token": token
-                    },
-                    "method": "getOrder",
-                    "params": {
-                        "page": 1,
-                        "limit": 1000
-                    }
-                }
-            )
-            order_data = await order_resp.json()
-            order = None
-            for orders in order_data["result"]["order"]:
-                if orders['CS_id'] == cs_id:
-                    order = orders
-                    break
+            order = await find_order(session, tg_user[0].url, user_id, token, cs_id)
             if not order:
                 return await msg.answer("Заказ не найден ❌", reply_markup=await main_menu_reply_buttons())
         except Exception as e:
@@ -108,18 +154,61 @@ async def handle_user_shared(msg: Message):
             await msg.answer("Ошибка при извлечении клиента, пожалуйста, отправьте администратору: {}".format(e))
             return
         item_data = []
-        default_image = FSInputFile("image/none_img.png")
+        id_data = []
+
+        for item in order['orderProducts']:
+            id_data.append(item['product']['CS_id'])
+
+        id_resp = await session.post(
+            url=tg_user[0].url,
+            json={
+                "auth": {"userId": user_id, "token": token},
+                "method": "getProduct",
+                "params": {
+                    "page": 1,
+                    "limit": 100,
+                    "filter": {
+                        "products": {
+                            "SD_id": id_data
+                        }
+                    }
+                }
+            }
+        )
+        product_data = await id_resp.json()
+        products = {p["CS_id"]: p for p in product_data["result"]["product"]}
+
         for item in order["orderProducts"]:
             u_id = str(uuid.uuid4())[:15]
-            card = await Card.create(name=item['product']['name'], image=None, price=item['price'], unique_link=u_id,
-                                     user=tg_user[0].id)
+            product = products.get(item['product']['CS_id'])
+
+            if product and product.get("imageUrl"):
+                product_image = tg_user[0].url[:-7] + product["imageUrl"]
+            else:
+                product_image = none_img_url
+
+            card = await Card.create(
+                name=item['product']['name'],
+                image=product_image,
+                price=item['price'],
+                unique_link=u_id,
+                user=tg_user[0].id
+            )
             item_data.append(card.unique_link)
+
             caption = (
                 f"<b>{item['product']['name']}</b>\n"
                 f"💰 Цена: <b>{item['price']}</b> сум\n"
                 f"🆔 Код товара: <code>{u_id}</code>"
             )
-            await msg.bot.send_photo(chat_id=user_id_, photo=default_image, caption=caption, parse_mode="HTML",
-                                     reply_markup=await buy_cards_button(card.id))
+
+            await msg.bot.send_photo(
+                chat_id=user_id_,
+                photo=product_image,
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=await buy_cards_button(card.id)
+            )
+            await asyncio.sleep(0.5)
         await msg.answer("✔ Все сообщения, отправленные клиенту", reply_markup=await main_menu_reply_buttons())
         return await TelegramUser.create_or_update(chat_id=str(user_id_), day=client_day, card_ids=item_data)

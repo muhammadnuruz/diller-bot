@@ -52,7 +52,7 @@ def get_orders_task(session, telegram_users, login_datas):
                     "include": "all",
                     "status": [1, 2, 3],
                     "period": {
-                        "dateCreate": {
+                        "orderCreated": {
                             "from": five_min_ago.strftime(date_format),
                             "to": now.strftime(date_format)
                         }
