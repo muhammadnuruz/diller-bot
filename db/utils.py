@@ -183,13 +183,13 @@ class AbstractClass:
     async def check_and_update_purchases(cls):
         async with await db.get_session() as session:
             try:
-                one_month_ago = datetime.utcnow() - timedelta(days=30)
+                today = datetime.utcnow()
 
                 stmt = (
                     update(cls)
                     .where(
                         cls.is_purchase.is_(True),
-                        cls.purchase_data < one_month_ago
+                        cls.purchase_data < today
                     )
                     .values(is_purchase=False)
                 )
