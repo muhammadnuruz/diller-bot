@@ -140,6 +140,7 @@ async def validate_data(tasks):
             if isinstance(r, Exception):
                 results.append({})
             else:
+                print(r)
                 results.append(r)
 
     return results
