@@ -26,7 +26,8 @@ def get_login_task(session, telegram_users):
 
 def get_orders_task(session, telegram_users, login_datas):
     tasks = []
-    now = datetime.now()
+    tz = pytz.timezone("Asia/Tashkent")
+    now = datetime.now(tz)
     five_min_ago = now - timedelta(minutes=6)
     date_format = "%Y-%m-%d %H:%M:%S"
 
@@ -39,6 +40,7 @@ def get_orders_task(session, telegram_users, login_datas):
             token = login_data["result"]["token"]
         except KeyError:
             continue
+
         payload = {
             "auth": {
                 "userId": user_id,
