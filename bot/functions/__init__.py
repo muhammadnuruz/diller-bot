@@ -54,10 +54,12 @@ def build_order_text(order, related_user, related_agent):
             lines.append(f"{idx}. {product_name} × {quantity} × {p.get('price', 0)} = <b>{summa}</b>")
     else:
         lines.append("— Нет товаров —")
+    total = order.get('totalSummaAfterDiscount', 0)
+    formatted_total = f"{total:,}".replace(",", " ")
 
     lines.extend([
         "━━━━━━━━━━━━━━━━━━━━",
-        f"💰 <b>Итого:</b> <b>{str(order.get('totalSummaAfterDiscount', 0)).replace(',', ' ')}</b>"
+        f"💰 <b>Итого:</b> <b>{formatted_total}</b>\n",
         "━━━━━━━━━━━━━━━━━━━━",
     ])
     return "\n".join(lines)
