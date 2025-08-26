@@ -57,7 +57,7 @@ def build_order_text(order, related_user, related_agent):
 
     lines.extend([
         "━━━━━━━━━━━━━━━━━━━━",
-        f"💰 <b>Итого:</b> <b>{order.get('totalSummaAfterDiscount', 0).replace(',', ' ')}</b>"
+        f"💰 <b>Итого:</b> <b>{str(order.get('totalSummaAfterDiscount', 0)).replace(',', ' ')}</b>"
         "━━━━━━━━━━━━━━━━━━━━",
     ])
     return "\n".join(lines)
