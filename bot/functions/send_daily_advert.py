@@ -20,5 +20,5 @@ async def send_daily_advert_function():
                 f"💰 Цена: <b>{card[0].price}</b> сум\n"
                 f"🆔 Код товара: <code>{card[0].unique_link}</code>"
             )
-            await bot.send_photo(chat_id=user.chat_id, photo=none_img_url, caption=caption, parse_mode="HTML",
+            await bot.send_photo(chat_id=user.chat_id, photo=card[0].image, caption=caption, parse_mode="HTML",
                                  reply_markup=await buy_cards_button(card[0].id))
