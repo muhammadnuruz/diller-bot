@@ -30,7 +30,6 @@ def get_orders_task(session, telegram_users, login_datas):
     tz = pytz.timezone("Asia/Tashkent")
     now = datetime.now(pytz.utc).astimezone(tz)
     five_min_ago = now - timedelta(minutes=6)
-    print(five_min_ago)
     date_format = "%Y-%m-%dT%H:%M:%S%z"
 
     for user, login_data in zip(telegram_users, login_datas):
@@ -186,7 +185,6 @@ async def main_function():
         clients = await nested_validate_data(
             get_client_tasks(session, telegram_users, login_datas, get_clients_id_function(new_orders)))
         data = []
-        print(new_orders)
         for user, orders, agent, client in zip(telegram_users, new_orders, agents, clients):
             data.append({
                 "user": user,
