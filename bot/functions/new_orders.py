@@ -30,6 +30,7 @@ def get_orders_task(session, telegram_users, login_datas):
     tz = pytz.timezone("Asia/Tashkent")
     now = datetime.now(tz)
     five_min_ago = now - timedelta(minutes=6)
+    print(five_min_ago)
     date_format = "%Y-%m-%d %H:%M:%S"
 
     for user, login_data in zip(telegram_users, login_datas):
