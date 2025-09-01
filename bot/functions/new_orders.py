@@ -28,10 +28,9 @@ def get_login_task(session, telegram_users):
 def get_orders_task(session, telegram_users, login_datas):
     tasks = []
     tz = pytz.timezone("Asia/Tashkent")
-    now = datetime.now(tz)
+    now = datetime.now(pytz.utc).astimezone(tz)
     five_min_ago = now - timedelta(minutes=6)
-    print(five_min_ago)
-    date_format = "%Y-%m-%d %H:%M:%S"
+    date_format = "%Y-%m-%dT%H:%M:%S%z"
 
     for user, login_data in zip(telegram_users, login_datas):
         if not (login_data and login_data.get("status")):
