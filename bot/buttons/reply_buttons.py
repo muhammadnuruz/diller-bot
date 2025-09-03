@@ -1,7 +1,7 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, KeyboardButtonRequestUser
 
 from bot.buttons.text import turn_off_advert, be_seller, turn_on_advert, give_permission, take_permission, \
-    back_user_menu
+    back_user_menu, none_advert, forward_advert, adverts, statistic
 
 
 async def main_menu_reply_buttons():
@@ -14,6 +14,7 @@ async def main_menu_reply_buttons():
 
 async def admin_menu_buttons():
     design = [
+        [KeyboardButton(text=adverts), KeyboardButton(text=statistic)],
         [KeyboardButton(text=give_permission), KeyboardButton(text=take_permission)],
         [KeyboardButton(text=back_user_menu)]
     ]
@@ -40,3 +41,11 @@ def request_user_reply_keyboard(request_id: int) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         one_time_keyboard=True
     )
+
+
+async def advert_menu_buttons():
+    design = [
+        [KeyboardButton(text=none_advert), KeyboardButton(text=forward_advert)],
+        [KeyboardButton(text=back_user_menu)]
+    ]
+    return ReplyKeyboardMarkup(keyboard=design, resize_keyboard=True)

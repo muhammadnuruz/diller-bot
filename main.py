@@ -13,6 +13,7 @@ from bot.handlers.display_orders import router as display_router
 from bot.handlers.adverb import router as adverb_router
 from bot.handlers.give_permission import router as permission_router
 from bot.handlers.send_order import router as send_order_router
+from bot.handlers.send_adverb import router as send_adverb_router
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ def setup_routers():
     dp.include_router(adverb_router)
     dp.include_router(permission_router)
     dp.include_router(send_order_router)
+    dp.include_router(send_adverb_router)
 
 
 async def main():

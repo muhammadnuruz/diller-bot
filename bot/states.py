@@ -10,3 +10,7 @@ class StartState(StatesGroup):
 
 class PermissionState(StatesGroup):
     waiting_for_days = State()
+
+class AdverbState(StatesGroup):
+    none_adverb = State()
+    forward_adverb = State()
