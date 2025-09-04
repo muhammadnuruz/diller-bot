@@ -1,13 +1,20 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, KeyboardButtonRequestUser
 
 from bot.buttons.text import turn_off_advert, be_seller, turn_on_advert, give_permission, take_permission, \
-    back_user_menu, none_advert, forward_advert, adverts, statistic
+    back_user_menu, none_advert, forward_advert, adverts, statistic, categories
 
 
 async def main_menu_reply_buttons():
     design = [
         [KeyboardButton(text=turn_off_advert), KeyboardButton(text=turn_on_advert)],
         [KeyboardButton(text=be_seller)]
+    ]
+    return ReplyKeyboardMarkup(keyboard=design, resize_keyboard=True)
+
+
+async def diller_menu_buttons():
+    design = [
+        [KeyboardButton(text=categories)],
     ]
     return ReplyKeyboardMarkup(keyboard=design, resize_keyboard=True)
 

@@ -5,8 +5,8 @@ from aiogram.types import Message, InlineQueryResultPhoto, InlineQuery
 from aiogram.fsm.context import FSMContext
 
 from bot.buttons.inline_buttons import main_menu_button, buy_cards_button
-from bot.buttons.reply_buttons import back_user_menu_button, main_menu_reply_buttons
-from bot.buttons.text import be_seller, back_user_menu
+from bot.buttons.reply_buttons import back_user_menu_button, main_menu_reply_buttons, diller_menu_buttons
+from bot.buttons.text import be_seller, back_user_menu, categories
 from bot.states import StartState
 from db.model import TelegramUser, Card
 
@@ -54,12 +54,15 @@ async def inline_search(query: InlineQuery):
 
 @router.message(F.text.in_(['/start', back_user_menu]), StateFilter(any_state))
 async def start_handler(msg: Message, state: FSMContext):
-    await TelegramUser.create_or_update(
+    tg_user = await TelegramUser.create_or_update(
         chat_id=str(msg.from_user.id),
         full_name=msg.from_user.full_name,
         username=msg.from_user.username,
     )
-    await msg.answer("Добро пожаловать в наш бот", reply_markup=await main_menu_reply_buttons())
+    if not tg_user.is_diller:
+        await msg.answer("Добро пожаловать в наш бот", reply_markup=await main_menu_reply_buttons())
+    else:
+        await msg.answer("Добро пожаловать в наш бот", reply_markup=await diller_menu_buttons())
     await state.clear()
 
 
@@ -108,6 +111,7 @@ async def be_seller_handler_5(msg: Message, state: FSMContext):
     )
     buttons = await main_menu_button(url=final_url, login=data['login'], password=data['password'])
     if buttons:
+        await msg.answer("Поздравляем, вы стали дилером", reply_markup=await diller_menu_buttons())
         await msg.answer("Выберите нужную категорию", reply_markup=buttons)
     else:
         await msg.answer("""
@@ -115,3 +119,11 @@ async def be_seller_handler_5(msg: Message, state: FSMContext):
 
 Чтобы начать заново: /start""")
     await state.clear()
+
+
+@router.message(F.text == categories)
+async def get_categories_handler(msg: Message):
+    tg_user = await TelegramUser.get_by(chat_id=str(msg.from_user.id))
+    if tg_user:
+        await msg.answer("Добро пожаловать в категории",
+                         reply_markup=await main_menu_button(tg_user[0].url, tg_user[0].login, tg_user[0].password))
