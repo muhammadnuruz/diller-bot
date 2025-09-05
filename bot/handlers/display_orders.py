@@ -4,6 +4,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
+from calendar import monthrange
 
 from bot.buttons.inline_buttons import main_menu_button, new_order_button
 from bot.buttons.text import my_orders
@@ -16,11 +17,11 @@ router = Router()
 async def get_token_and_id(user):
     async with aiohttp.ClientSession() as session:
         async with session.post(
-                user.url,
-                json={
-                    "method": "login",
-                    "auth": {"login": user.login, "password": user.password},
-                },
+            user.url,
+            json={
+                "method": "login",
+                "auth": {"login": user.login, "password": user.password},
+            },
         ) as resp:
             data = await resp.json()
 
@@ -33,41 +34,33 @@ async def get_token_and_id(user):
 async def my_orders_handler(call: CallbackQuery):
     tg_user = await TelegramUser.get_by(chat_id=str(call.from_user.id))
     if not tg_user[0].is_purchase:
-        await call.message.answer(text="Вы не приобрели ежемесячную подписку ✖")
+        await call.message.answer("Вы не приобрели ежемесячную подписку ✖")
         return
 
-    user_id, token = await get_token_and_id(tg_user[0])
-    if not user_id:
-        await call.answer("Ошибка авторизации ❌", show_alert=True)
-        return
+    current_year = datetime.now().year
+    years = [str(y) for y in range(2020, current_year + 1)]
 
-    payload = {
-        "auth": {"userId": user_id, "token": token},
-        "method": "getOrder",
-        "params": {
-            "page": 1,
-            "limit": 1000,
-            "filter": {"include": "all", "status": [1, 2, 3]},
-        },
-    }
+    kb = InlineKeyboardBuilder()
+    for y in years:
+        kb.button(text=y, callback_data=f"orders_year:{y}")
+    kb.adjust(4)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(tg_user[0].url, json=payload) as resp:
-            data = await resp.json()
+    await call.message.answer("📅 Выберите год:", reply_markup=kb.as_markup())
 
-    orders = data.get("result", [])
-    if not orders:
-        await call.answer("📦 У вас пока нет заказов.", show_alert=True)
-        return
 
-    months = sorted({datetime.fromisoformat(o["orderCreated"]).strftime("%Y-%m") for o in orders})
+@router.callback_query(F.data.startswith("orders_year:"))
+async def year_selected(call: CallbackQuery):
+    _, year_str = call.data.split(":")
+    year = int(year_str)
+
+    months = [f"{m:02d}" for m in range(1, 13)]
 
     kb = InlineKeyboardBuilder()
     for m in months:
-        kb.button(text=m, callback_data=f"orders_month:{m}")
-    kb.adjust(2)
+        kb.button(text=m, callback_data=f"orders_month:{year}-{m}")
+    kb.adjust(4)
 
-    await call.message.answer("📅 Выберите месяц:", reply_markup=kb.as_markup())
+    await call.message.answer(f"📆 Выберите месяц ({year}):", reply_markup=kb.as_markup())
 
 
 @router.callback_query(F.data.startswith("orders_month:"))
@@ -75,43 +68,13 @@ async def month_selected(call: CallbackQuery):
     _, month_str = call.data.split(":")
     year, month = map(int, month_str.split("-"))
 
-    tg_user = await TelegramUser.get_by(chat_id=str(call.from_user.id))
-    user_id, token = await get_token_and_id(tg_user[0])
-    if not user_id:
-        await call.answer("Ошибка авторизации ❌", show_alert=True)
-        return
-
-    payload = {
-        "auth": {"userId": user_id, "token": token},
-        "method": "getOrder",
-        "params": {
-            "page": 1,
-            "limit": 1000,
-            "filter": {"include": "all", "status": [1, 2, 3]},
-        },
-    }
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(tg_user[0].url, json=payload) as resp:
-            data = await resp.json()
-
-    orders = data.get("result", [])
-
-    days = sorted({
-        datetime.fromisoformat(o["orderCreated"]).strftime("%d")
-        for o in orders
-        if datetime.fromisoformat(o["orderCreated"]).year == year
-           and datetime.fromisoformat(o["orderCreated"]).month == month
-    })
-
-    if not days:
-        await call.answer("❌ В этом месяце заказов нет.", show_alert=True)
-        return
+    _, num_days = monthrange(year, month)
+    days = [f"{d:02d}" for d in range(1, num_days + 1)]
 
     kb = InlineKeyboardBuilder()
     for d in days:
         kb.button(text=d, callback_data=f"orders_day:{year}-{month:02d}-{d}")
-    kb.adjust(5)
+    kb.adjust(7)
 
     await call.message.answer(f"📆 Выберите день ({month_str}):", reply_markup=kb.as_markup())
 
