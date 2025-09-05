@@ -126,25 +126,30 @@ async def day_selected(call: CallbackQuery):
         await call.answer("❌ В этот день заказов нет.", show_alert=True)
         return
 
-    for order in orders['order']:
-        payload = {
-            "auth": {"userId": user_id, "token": token},
-            "method": "getClient",
-            "params": {
-                "page": 1,
-                "limit": 1000,
-                "filter": {"client": {"CS_id": order['client']['CS_id']}}
+    async with aiohttp.ClientSession() as session:
+        for order in orders:
+            payload = {
+                "auth": {"userId": user_id, "token": token},
+                "method": "getClient",
+                "params": {
+                    "page": 1,
+                    "limit": 1000,
+                    "filter": {"client": {"CS_id": order['client']['CS_id']}}
+                }
             }
-        }
-        async with aiohttp.ClientSession() as session:
             async with session.post(tg_user[0].url, json=payload) as user_resp:
                 user_data = await user_resp.json()
-        text = build_order_text(order, user_data['result']['client'][0], {})
-        await call.message.answer(
-            text,
-            parse_mode="HTML",
-            reply_markup=await new_order_button(order["CS_id"])
-        )
+
+            client_data = {}
+            if user_data.get("status") and user_data.get("result", {}).get("client"):
+                client_data = user_data["result"]["client"][0]
+
+            text = build_order_text(order, client_data, {})
+            await call.message.answer(
+                text,
+                parse_mode="HTML",
+                reply_markup=await new_order_button(order["CS_id"])
+            )
 
     buttons = await main_menu_button(
         url=tg_user[0].url,
