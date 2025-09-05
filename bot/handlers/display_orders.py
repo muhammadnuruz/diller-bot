@@ -8,6 +8,7 @@ from calendar import monthrange
 
 from bot.buttons.inline_buttons import main_menu_button, new_order_button
 from bot.buttons.text import my_orders
+from bot.functions import build_order_text
 from bot.handlers.ordering import format_order_message
 from db.model import TelegramUser
 
@@ -17,11 +18,11 @@ router = Router()
 async def get_token_and_id(user):
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            user.url,
-            json={
-                "method": "login",
-                "auth": {"login": user.login, "password": user.password},
-            },
+                user.url,
+                json={
+                    "method": "login",
+                    "auth": {"login": user.login, "password": user.password},
+                },
         ) as resp:
             data = await resp.json()
 
@@ -46,6 +47,7 @@ async def my_orders_handler(call: CallbackQuery):
     kb.adjust(4)
 
     await call.message.answer("📅 Выберите год:", reply_markup=kb.as_markup())
+    await call.message.delete()
 
 
 @router.callback_query(F.data.startswith("orders_year:"))
@@ -61,6 +63,7 @@ async def year_selected(call: CallbackQuery):
     kb.adjust(4)
 
     await call.message.answer(f"📆 Выберите месяц ({year}):", reply_markup=kb.as_markup())
+    await call.message.delete()
 
 
 @router.callback_query(F.data.startswith("orders_month:"))
@@ -77,6 +80,7 @@ async def month_selected(call: CallbackQuery):
     kb.adjust(7)
 
     await call.message.answer(f"📆 Выберите день ({month_str}):", reply_markup=kb.as_markup())
+    await call.message.delete()
 
 
 @router.callback_query(F.data.startswith("orders_day:"))
@@ -105,7 +109,7 @@ async def day_selected(call: CallbackQuery):
                 "include": "all",
                 "status": [1, 2, 3],
                 "period": {
-                    "orderCreated": {
+                    "dateCreate": {
                         "from": start_date.strftime(date_format),
                         "to": end_date.strftime(date_format),
                     }
@@ -117,14 +121,25 @@ async def day_selected(call: CallbackQuery):
     async with aiohttp.ClientSession() as session:
         async with session.post(tg_user[0].url, json=payload) as resp:
             data = await resp.json()
-
     orders = data.get("result", [])
     if not orders:
         await call.answer("❌ В этот день заказов нет.", show_alert=True)
         return
 
-    for order in orders:
-        text = format_order_message(order)
+    for order in orders['order']:
+        payload = {
+            "auth": {"userId": user_id, "token": token},
+            "method": "getClient",
+            "params": {
+                "page": 1,
+                "limit": 1000,
+                "filter": {"client": {"CS_id": order['client']['CS_id']}}
+            }
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(tg_user[0].url, json=payload) as user_resp:
+                user_data = await user_resp.json()
+        text = build_order_text(order, user_data['result']['client'][0], {})
         await call.message.answer(
             text,
             parse_mode="HTML",
