@@ -1,9 +1,11 @@
+import aiohttp
+import pytz
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
 
-from bot.buttons.inline_buttons import main_menu_button
+from bot.buttons.inline_buttons import main_menu_button, new_order_button
 from bot.buttons.text import my_orders
 from bot.handlers.ordering import format_order_message
 from db.model import Order, TelegramUser
@@ -61,19 +63,57 @@ async def day_selected(call: CallbackQuery):
     year, month, day = map(int, date_str.split("-"))
 
     tg_user = await TelegramUser.get_by(chat_id=str(call.from_user.id))
-    orders = await Order.get_by(shop=tg_user[0].id)
 
-    filtered_orders = [o for o in orders if o.created_at.date() == datetime(year, month, day).date()]
+    tz = pytz.timezone("Asia/Tashkent")
+    start_date = datetime(year, month, day, 0, 0, 0, tzinfo=tz)
+    end_date = datetime(year, month, day, 23, 59, 59, tzinfo=tz)
 
-    if not filtered_orders:
+    date_format = "%Y-%m-%dT%H:%M:%S%z"
+
+    payload = {
+        "auth": {
+            "userId": tg_user[0].user_id,
+            "token": tg_user[0].token
+        },
+        "method": "getOrder",
+        "params": {
+            "page": 1,
+            "limit": 1000,
+            "filter": {
+                "include": "all",
+                "status": [1, 2, 3],
+                "period": {
+                    "orderCreated": {
+                        "from": start_date.strftime(date_format),
+                        "to": end_date.strftime(date_format)
+                    }
+                }
+            }
+        }
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(tg_user[0].url, json=payload) as resp:
+            data = await resp.json()
+
+    orders = data.get("result", [])
+    if not orders:
         await call.answer("❌ В этот день заказов нет.", show_alert=True)
         return
 
-    for order in filtered_orders:
+    for order in orders:
         text = format_order_message(order)
-        await call.message.answer(text, parse_mode="HTML")
+        await call.message.answer(
+            text,
+            parse_mode="HTML",
+            reply_markup=await new_order_button(order["CS_id"])
+        )
 
-    buttons = await main_menu_button(url=tg_user[0].url, login=tg_user[0].login, password=tg_user[0].password)
+    buttons = await main_menu_button(
+        url=tg_user[0].url,
+        login=tg_user[0].login,
+        password=tg_user[0].password
+    )
     if buttons:
         await call.message.answer("Выберите нужную категорию", reply_markup=buttons)
     else:
