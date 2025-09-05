@@ -9,7 +9,6 @@ from calendar import monthrange
 from bot.buttons.inline_buttons import main_menu_button, new_order_button
 from bot.buttons.text import my_orders
 from bot.functions import build_order_text
-from bot.handlers.ordering import format_order_message
 from db.model import TelegramUser
 
 router = Router()
@@ -122,12 +121,12 @@ async def day_selected(call: CallbackQuery):
         async with session.post(tg_user[0].url, json=payload) as resp:
             data = await resp.json()
     orders = data.get("result", [])
-    if not orders:
+    if data['pagination']['total'] < 1:
         await call.answer("❌ В этот день заказов нет.", show_alert=True)
         return
 
     async with aiohttp.ClientSession() as session:
-        for order in orders:
+        for order in orders['order']:
             payload = {
                 "auth": {"userId": user_id, "token": token},
                 "method": "getClient",
