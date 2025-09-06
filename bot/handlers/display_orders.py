@@ -142,8 +142,33 @@ async def day_selected(call: CallbackQuery):
             client_data = {}
             if user_data.get("status") and user_data.get("result", {}).get("client"):
                 client_data = user_data["result"]["client"][0]
+            payload = {
+                "auth": {
+                    "userId": user_id,
+                    "token": token
+                },
+                "method": "getAgent",
+                "params": {
+                    "page": 1,
+                    "limit": 1000
+                }
+            }
+            related_agent = {
+                "CS_id": order.get("agent", {}).get("CS_id", "—"),
+                "name": "Информация об агенте не найдена"
+            }
+            async with session.post(tg_user[0].url, json=payload) as agent_resp:
+                agent_data = await agent_resp.json()
+            if agent_data.get("status") and agent_data.get("result", {}).get("agent"):
+                agents = agent_data["result"]["agent"]
+            for agent in agents:
+                if agent.get("CS_id") == order.get("agent", {}).get("CS_id"):
+                    related_agent = {
+                        "CS_id": agent.get("CS_id", "—"),
+                        "name": agent.get("name", "—")
+                    }
 
-            text = build_order_text(order, client_data, {})
+            text = build_order_text(order, client_data, related_agent)
             await call.message.answer(
                 text,
                 parse_mode="HTML",
